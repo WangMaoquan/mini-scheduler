@@ -1,7 +1,9 @@
 // job 类型
-type SchedulerJob = Function;
+export interface SchedulerJob extends Function {
+  id?: number;
+}
 
-type SchedulerJobs = SchedulerJob | SchedulerJob[];
+export type SchedulerJobs = SchedulerJob | SchedulerJob[];
 
 // 全局保存的队列
 const queue: SchedulerJob[] = [];
@@ -32,12 +34,20 @@ export function queueFlush() {
   }
 }
 
+const comparator = (a: SchedulerJob, b: SchedulerJob): number => {
+  const aId = a.id == null ? Infinity : a.id;
+  const bId = b.id == null ? Infinity : b.id;
+  return aId - bId;
+};
+
 /**
  * 开始执行 queue 中的job
  */
 function flushJobs() {
   isFlushPending = false; // 结束pending
   isFlushing = true; // 标记开始flash
+
+  queue.sort(comparator);
 
   try {
     // 遍历执行
