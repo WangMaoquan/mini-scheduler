@@ -11,8 +11,6 @@ const queue: SchedulerJob[] = [];
 let isFlushing = false; // queue 是否正在执行的 标记
 let isFlushPending = false; // queue 是否准备执行 的标记 可以理解为 resolve 之前 都是 true
 
-let flushIndex = 0;
-
 /**
  * 传入一个的 cb
  * @param job
@@ -34,10 +32,11 @@ export function queueFlush() {
   }
 }
 
+const getId = (job: SchedulerJob): number =>
+  job.id == null ? Infinity : job.id;
+
 const comparator = (a: SchedulerJob, b: SchedulerJob): number => {
-  const aId = a.id == null ? Infinity : a.id;
-  const bId = b.id == null ? Infinity : b.id;
-  return aId - bId;
+  return getId(a) - getId(b);
 };
 
 /**
@@ -51,7 +50,7 @@ function flushJobs() {
 
   try {
     // 遍历执行
-    for (flushIndex = 0; flushIndex < queue.length; flushIndex++) {
+    for (let flushIndex = 0; flushIndex < queue.length; flushIndex++) {
       const job = queue[flushIndex];
       if (job) {
         job();
@@ -59,7 +58,6 @@ function flushJobs() {
     }
   } finally {
     // 重置 状态
-    flushIndex = 0;
     queue.length = 0;
     isFlushing = false;
   }
