@@ -12,10 +12,10 @@ const queue: SchedulerJob[] = [];
 let isFlushing = false; // queue 是否正在执行的 标记
 let isFlushPending = false; // queue 是否准备执行 的标记 可以理解为 resolve 之前 都是 true
 
-let flushIndex = 0;
+let flushIndex = 0; // 执行 queue 中任务 的下标
 
-const resolvedPromise = Promise.resolve() as Promise<any>;
-let currentFlushPromise: Promise<void> | null = null;
+const resolvedPromise = Promise.resolve() as Promise<any>; // 就是 Promise.resolve() 方法, 避免每次 queueFlush 重复创建
+let currentFlushPromise: Promise<void> | null = null; // 当前正在 flush 的promise
 
 export function nextTick<T = void>(
   this: T,
