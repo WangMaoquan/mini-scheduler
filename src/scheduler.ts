@@ -1,6 +1,7 @@
 // job 类型
 export interface SchedulerJob extends Function {
   id?: number;
+  pre?: boolean;
 }
 
 export type SchedulerJobs = SchedulerJob | SchedulerJob[];
@@ -11,13 +12,32 @@ const queue: SchedulerJob[] = [];
 let isFlushing = false; // queue 是否正在执行的 标记
 let isFlushPending = false; // queue 是否准备执行 的标记 可以理解为 resolve 之前 都是 true
 
+let flushIndex = 0;
+
+function findInsertionIndex(id: number) {
+  let start = flushIndex + 1;
+  let end = queue.length;
+
+  while (start < end) {
+    const middle = (start + end) >>> 1;
+    const middleJobId = getId(queue[middle]);
+    middleJobId < id ? (start = middle + 1) : (end = middle);
+  }
+
+  return start;
+}
+
 /**
  * 传入一个的 cb
  * @param job
  */
 export function queueJob(job: SchedulerJob) {
   if (!queue.length || !queue.includes(job)) {
-    queue.push(job);
+    if (job.id == null) {
+      queue.push(job);
+    } else {
+      queue.splice(findInsertionIndex(job.id), 0, job);
+    }
     queueFlush();
   }
 }
@@ -36,7 +56,12 @@ const getId = (job: SchedulerJob): number =>
   job.id == null ? Infinity : job.id;
 
 const comparator = (a: SchedulerJob, b: SchedulerJob): number => {
-  return getId(a) - getId(b);
+  const diff = getId(a) - getId(b);
+  if (diff === 0) {
+    if (a.pre && !b.pre) return -1;
+    if (b.pre && !a.pre) return 1;
+  }
+  return diff;
 };
 
 /**
@@ -50,7 +75,7 @@ function flushJobs() {
 
   try {
     // 遍历执行
-    for (let flushIndex = 0; flushIndex < queue.length; flushIndex++) {
+    for (flushIndex = 0; flushIndex < queue.length; flushIndex++) {
       const job = queue[flushIndex];
       if (job) {
         job();
@@ -60,5 +85,6 @@ function flushJobs() {
     // 重置 状态
     queue.length = 0;
     isFlushing = false;
+    flushIndex = 0;
   }
 }

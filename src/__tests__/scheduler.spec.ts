@@ -71,4 +71,23 @@ describe('scheduler', () => {
     await dummyThen;
     expect(calls).toMatchObject(['job2', 'job1']);
   });
+
+  test('pre flush jobs', async () => {
+    const calls: string[] = [];
+    const dummyThen = Promise.resolve().then();
+    const job1: SchedulerJob = () => {
+      calls.push('job1');
+    };
+    const job2 = () => {
+      calls.push('job2');
+    };
+
+    job2.pre = true;
+    job2.id = 1;
+    queueJob(job1);
+    queueJob(job2);
+
+    await dummyThen;
+    expect(calls).toMatchObject(['job2', 'job1']);
+  });
 });
