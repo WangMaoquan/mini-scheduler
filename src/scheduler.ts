@@ -14,6 +14,17 @@ let isFlushPending = false; // queue 是否准备执行 的标记 可以理解�
 
 let flushIndex = 0;
 
+const resolvedPromise = Promise.resolve() as Promise<any>;
+let currentFlushPromise: Promise<void> | null = null;
+
+export function nextTick<T = void>(
+  this: T,
+  fn?: (this: T) => void,
+): Promise<void> {
+  const p = currentFlushPromise || resolvedPromise;
+  return fn ? p.then(this ? fn.bind(this) : fn) : p;
+}
+
 function findInsertionIndex(id: number) {
   let start = flushIndex + 1;
   let end = queue.length;
@@ -48,7 +59,7 @@ export function queueJob(job: SchedulerJob) {
 export function queueFlush() {
   if (!isFlushing && !isFlushPending) {
     isFlushPending = true;
-    Promise.resolve().then(flushJobs);
+    currentFlushPromise = resolvedPromise.then(flushJobs);
   }
 }
 
@@ -86,5 +97,6 @@ function flushJobs() {
     queue.length = 0;
     isFlushing = false;
     flushIndex = 0;
+    currentFlushPromise = null;
   }
 }

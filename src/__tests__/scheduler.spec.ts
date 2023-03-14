@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest';
-import { queueJob, SchedulerJob } from '../scheduler';
+import { nextTick, queueJob, SchedulerJob } from '../scheduler';
 
 describe('scheduler', () => {
   test('queueJob', async () => {
@@ -89,5 +89,24 @@ describe('scheduler', () => {
 
     await dummyThen;
     expect(calls).toMatchObject(['job2', 'job1']);
+  });
+
+  test('nextTick', async () => {
+    const calls: string[] = [];
+    const job1 = () => {
+      calls.push('job1');
+    };
+    const job2 = () => {
+      calls.push('job2');
+    };
+    queueJob(job1);
+    job2();
+
+    expect(calls.length).toBe(1);
+    await nextTick(() => {
+      calls.push('nextTick');
+    });
+    expect(calls.length).toBe(3);
+    expect(calls).toMatchObject(['job2', 'job1', 'nextTick']);
   });
 });
